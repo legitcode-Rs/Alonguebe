@@ -2,16 +2,18 @@
  * Seção de contato. Recebe dados de SALON_CONFIG (App.jsx), monta os links
  * externos e usa estado para controlar o pequeno formulário de mensagem.
  */
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { getCmsApiUrl, useCms } from '../context/CmsContext';
 
 const Contact = ({ address, whatsappNumber, phoneFormatted, instagramUsername }) => {
   const { content } = useCms();
   const cms = content?.settings || {};
   // Mantém os três inputs sincronizados com a interface.
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', message: '', website: '' });
+  const formStartedAt = useRef(Date.now());
   // `status` escolhe entre mensagem de sucesso, erro ou nenhuma mensagem.
   const [status, setStatus] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Atualiza dinamicamente a propriedade cujo nome corresponde ao input alterado.
   const handleChange = (e) => {
@@ -23,6 +25,7 @@ const Contact = ({ address, whatsappNumber, phoneFormatted, instagramUsername })
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) {
+      setErrorMessage('Por favor, preencha todos os campos do formulário.');
       setStatus('error');
       return;
     }
@@ -31,13 +34,17 @@ const Contact = ({ address, whatsappNumber, phoneFormatted, instagramUsername })
       const response = await fetch(getCmsApiUrl('messages'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, form_started_at: formStartedAt.current }),
       });
-      if (!response.ok) throw new Error('Não foi possível enviar a mensagem.');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Não foi possível enviar a mensagem.');
       setStatus('success');
-      setFormData({ name: '', email: '', message: '' });
+      setErrorMessage('');
+      setFormData({ name: '', email: '', message: '', website: '' });
+      formStartedAt.current = Date.now();
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
+      setErrorMessage(error.message || 'Não foi possível enviar a mensagem.');
       setStatus('error');
     }
   };
@@ -127,11 +134,15 @@ const Contact = ({ address, whatsappNumber, phoneFormatted, instagramUsername })
             )}
             {status === 'error' && (
               <div className="form-message form-message-error">
-                Por favor, preencha todos os campos do formulário.
+                {errorMessage}
               </div>
             )}
 
             <form onSubmit={handleSendMessage}>
+              <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: '1px', height: '1px', overflow: 'hidden' }}>
+                <label htmlFor="contact-website">Não preencha este campo</label>
+                <input id="contact-website" name="website" type="text" tabIndex="-1" autoComplete="off" value={formData.website} onChange={handleChange} />
+              </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="contact-name">{cms.form_name_label || 'Nome Completo'}</label>
                 <input 

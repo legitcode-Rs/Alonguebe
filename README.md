@@ -159,7 +159,7 @@ Mantenha os dados públicos — domínio, telefone, endereço, Instagram e horá
 
 ## Limitações e segurança
 
-- As rotas de envio do plugin são públicas para permitir formulários sem login. Antes de tráfego real, adicione proteção contra spam, limite de requisições e, se necessário, CAPTCHA.
+- As rotas de envio do plugin são públicas para permitir formulários sem login. Elas possuem honeypot, verificação de tempo de preenchimento, bloqueio de duplicatas e limite de 5 tentativas por IP/formulário a cada 10 minutos. Para ataques mais sofisticados, considere CAPTCHA como camada adicional.
 - O plugin valida nome e e-mail no servidor; os demais campos são higienizados, mas o agendamento ainda precisa ser confirmado pela equipe.
 - A página comum do WordPress é inserida como HTML em Hero/Sobre. Somente usuários confiáveis devem ter permissão para editar esse conteúdo.
 - A API Express em `server/` grava em JSON e expõe uma listagem sem autenticação. Não a use para dados reais sem uma revisão de segurança.

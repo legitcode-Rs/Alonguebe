@@ -162,7 +162,7 @@ O nonce da caixa **Detalhes do item** comprova que um salvamento veio de um form
 | `POST /alonguebe/v1/appointments` | dados do agendamento | cria um agendamento, HTTP 201 |
 | `POST /alonguebe/v1/messages` | dados de contato | cria uma mensagem, HTTP 201 |
 
-As rotas usam `permission_callback => __return_true` porque visitantes não autenticados precisam ler o site e enviar formulários. Isso torna essenciais as proteções antispam antes de produção.
+As rotas usam `permission_callback => __return_true` porque visitantes não autenticados precisam ler o site e enviar formulários. Os callbacks de envio aplicam quatro proteções no servidor: campo-isca (honeypot), tempo mínimo de preenchimento, bloqueio de conteúdo idêntico por 15 minutos e limite de 5 tentativas por IP/tipo de formulário a cada 10 minutos. O IP é usado apenas para gerar uma chave temporária com hash. Se o volume ou o padrão de abuso exigir, CAPTCHA pode ser acrescentado como uma camada adicional.
 
 ## 7. Mapa de arquivos
 

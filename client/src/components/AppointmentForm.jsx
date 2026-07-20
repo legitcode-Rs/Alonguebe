@@ -7,7 +7,7 @@
  * Fluxo: usuário digita -> estado formData -> validação -> POST na API ->
  * mensagem de sucesso/erro -> opção de encaminhar os dados ao WhatsApp.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getCmsApiUrl, useCms } from '../context/CmsContext';
 
 const AppointmentForm = ({ selectedService, whatsappNumber }) => {
@@ -22,6 +22,7 @@ const AppointmentForm = ({ selectedService, whatsappNumber }) => {
     date: '',
     time: '',
     notes: '',
+    website: '',
   };
 
   // Estado central com os valores de todos os inputs controlados.
@@ -32,6 +33,7 @@ const AppointmentForm = ({ selectedService, whatsappNumber }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // 'success' | 'error'
   const [successData, setSuccessData] = useState(null);
+  const formStartedAt = useRef(Date.now());
 
   // Sincroniza a escolha feita nos cards sempre que a prop mudar.
   useEffect(() => {
@@ -111,7 +113,7 @@ const AppointmentForm = ({ selectedService, whatsappNumber }) => {
           'Content-Type': 'application/json',
         },
         // A API espera JSON, não dados de formulário tradicionais.
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, form_started_at: formStartedAt.current }),
       });
 
       const data = await response.json();
@@ -121,9 +123,10 @@ const AppointmentForm = ({ selectedService, whatsappNumber }) => {
         setSubmitStatus('success');
         setSuccessData(formData);
         setFormData(initialFormState); // Limpa os inputs após salvar.
+        formStartedAt.current = Date.now();
       } else {
         setSubmitStatus('error');
-        setErrors({ server: data.error || 'Ocorreu um erro ao processar sua solicitação.' });
+        setErrors({ server: data.message || 'Ocorreu um erro ao processar sua solicitação.' });
       }
     } catch (err) {
       console.error('Erro de envio:', err);
@@ -237,6 +240,10 @@ const AppointmentForm = ({ selectedService, whatsappNumber }) => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} noValidate>
+              <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: '1px', height: '1px', overflow: 'hidden' }}>
+                <label htmlFor="appointment-website">Não preencha este campo</label>
+                <input id="appointment-website" name="website" type="text" tabIndex="-1" autoComplete="off" value={formData.website} onChange={handleChange} />
+              </div>
               {errors.server && (
                 <div className="form-message form-message-error">
                   {errors.server}

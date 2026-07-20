@@ -11,6 +11,9 @@ if (!defined('ABSPATH')) exit;
 
 // Nome da opção que guarda todos os campos gerais em um único registro.
 const ALONGUEBE_OPTION = 'alonguebe_site_settings';
+const ALONGUEBE_RATE_LIMIT = 5;
+const ALONGUEBE_RATE_WINDOW = 10 * MINUTE_IN_SECONDS;
+const ALONGUEBE_DUPLICATE_WINDOW = 15 * MINUTE_IN_SECONDS;
 
 /** Campos de texto globais e títulos das seções. */
 function alonguebe_setting_fields() {
@@ -279,15 +282,65 @@ function alonguebe_content_endpoint() {
     ));
 }
 
+/** Retorna uma chave anônima e estável para limitar o cliente atual. */
+function alonguebe_submission_client_key($type) {
+    $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
+    return 'along_rate_' . md5($type . '|' . $ip . '|' . wp_salt('nonce'));
+}
+
+/** Limita rajadas de submissões sem armazenar o endereço IP em texto puro. */
+function alonguebe_check_rate_limit($type) {
+    $key = alonguebe_submission_client_key($type);
+    $attempts = (int) get_transient($key);
+    if ($attempts >= ALONGUEBE_RATE_LIMIT) {
+        return new WP_Error('rate_limited', 'Muitas tentativas. Aguarde 10 minutos e tente novamente.', array('status' => 429));
+    }
+    set_transient($key, $attempts + 1, ALONGUEBE_RATE_WINDOW);
+    return true;
+}
+
+/** Detecta automação básica por campo-isca e tempo mínimo de preenchimento. */
+function alonguebe_check_spam_signals($data) {
+    if (!empty($data['website'])) {
+        return new WP_Error('spam_detected', 'Não foi possível processar o envio.', array('status' => 400));
+    }
+
+    $started_at = isset($data['form_started_at']) ? (int) $data['form_started_at'] : 0;
+    $elapsed = (int) floor(microtime(true) * 1000) - $started_at;
+    if (!$started_at || $elapsed < 3000 || $elapsed > HOUR_IN_SECONDS * 1000) {
+        return new WP_Error('spam_detected', 'Atualize a página e tente novamente.', array('status' => 400));
+    }
+    return true;
+}
+
 /**
  * Valida e cria um agendamento ou mensagem recebido sem login.
  * Nome e e-mail são requisitos comuns; os demais dados dependem do formulário.
  */
 function alonguebe_create_submission(WP_REST_Request $request, $type) {
     $data = $request->get_json_params();
+    if (!is_array($data)) return new WP_Error('invalid_data', 'Envie os dados em formato JSON.', array('status' => 400));
+
+    $rate_limit = alonguebe_check_rate_limit($type);
+    if (is_wp_error($rate_limit)) return $rate_limit;
+    $spam_check = alonguebe_check_spam_signals($data);
+    if (is_wp_error($spam_check)) return $spam_check;
+
     $name = sanitize_text_field($data['name'] ?? '');
     $email = sanitize_email($data['email'] ?? '');
     if (!$name || !$email || !is_email($email)) return new WP_Error('invalid_data', 'Nome e e-mail válido são obrigatórios.', array('status' => 400));
+    if (strlen($name) > 120 || strlen($email) > 254) return new WP_Error('invalid_data', 'Nome ou e-mail excede o tamanho permitido.', array('status' => 400));
+
+    $field_limits = array('phone' => 40, 'service' => 160, 'date' => 10, 'time' => 5, 'notes' => 2000, 'message' => 4000);
+    foreach ($field_limits as $field => $limit) {
+        if (isset($data[$field]) && strlen((string) $data[$field]) > $limit) {
+            return new WP_Error('invalid_data', 'Um dos campos excede o tamanho permitido.', array('status' => 400));
+        }
+    }
+
+    $fingerprint_data = array($type, strtolower($email), $name, $data['phone'] ?? '', $data['date'] ?? '', $data['time'] ?? '', $data['message'] ?? $data['notes'] ?? '');
+    $duplicate_key = 'along_dup_' . md5(wp_json_encode($fingerprint_data) . wp_salt('nonce'));
+    if (get_transient($duplicate_key)) return new WP_Error('duplicate_submission', 'Este envio já foi recebido.', array('status' => 409));
     $requested_schedule = '';
     if ($type === 'along_appointment' && !empty($data['date'])) {
         $date = DateTime::createFromFormat('Y-m-d', sanitize_text_field($data['date']));
@@ -304,13 +357,14 @@ function alonguebe_create_submission(WP_REST_Request $request, $type) {
     if (is_wp_error($post_id)) return $post_id;
     foreach (array('email', 'phone', 'service', 'date', 'time', 'notes') as $field) if (isset($data[$field])) update_post_meta($post_id, '_along_' . $field, sanitize_text_field($data[$field]));
     update_post_meta($post_id, '_along_status', 'Pendente');
+    set_transient($duplicate_key, 1, ALONGUEBE_DUPLICATE_WINDOW);
     return new WP_REST_Response(array('message' => 'Recebido com sucesso.', 'id' => $post_id), 201);
 }
 
 /** Registra as três rotas públicas consumidas pelo frontend. */
 function alonguebe_register_routes() {
     // Visitantes não têm sessão WordPress, por isso as permissões são públicas.
-    // Proteções antispam e rate limiting devem ser adicionadas em produção.
+    // Os callbacks aplicam honeypot, tempo mínimo, deduplicação e rate limiting.
     register_rest_route('alonguebe/v1', '/content', array('methods' => 'GET', 'callback' => 'alonguebe_content_endpoint', 'permission_callback' => '__return_true'));
     register_rest_route('alonguebe/v1', '/appointments', array('methods' => 'POST', 'callback' => fn($request) => alonguebe_create_submission($request, 'along_appointment'), 'permission_callback' => '__return_true'));
     register_rest_route('alonguebe/v1', '/messages', array('methods' => 'POST', 'callback' => fn($request) => alonguebe_create_submission($request, 'along_message'), 'permission_callback' => '__return_true'));
