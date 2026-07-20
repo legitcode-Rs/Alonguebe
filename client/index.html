@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<!-- Documento base: o conteúdo visível é inserido pelo React em #root. -->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- SEO Básico -->
+    <title>Alonguebe | Salão de Beleza em Canoas - Alongamento, Cabelo e Estética</title>
+    <meta name="description" content="Conheça a Alonguebe, salão de beleza em Canoas especializado em cabelo, alongamento, unhas, sobrancelhas, maquiagem e estética. Agende pelo WhatsApp." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://alonguebe.com.br" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://alonguebe.com.br" />
+    <meta property="og:title" content="Alonguebe | Salão de Beleza em Canoas - Alongamento, Cabelo e Estética" />
+    <meta property="og:description" content="Conheça a Alonguebe, salão de beleza em Canoas especializado em cabelo, alongamento, unhas, sobrancelhas, maquiagem e estética. Agende pelo WhatsApp." />
+    <meta property="og:image" content="https://alonguebe.com.br/assets/og-image.jpg" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://alonguebe.com.br" />
+    <meta property="twitter:title" content="Alonguebe | Salão de Beleza em Canoas - Alongamento, Cabelo e Estética" />
+    <meta property="twitter:description" content="Conheça a Alonguebe, salão de beleza em Canoas especializado em cabelo, alongamento, unhas, sobrancelhas, maquiagem e estética. Agende pelo WhatsApp." />
+    <meta property="twitter:image" content="https://alonguebe.com.br/assets/og-image.jpg" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Google Fonts Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fontes Inter (Principal) e Playfair Display (Decorativa/Títulos) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet" />
+
+    <!-- Schema.org JSON-LD para SEO Local (LocalBusiness / BeautySalon) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BeautySalon",
+        "name": "Alonguebe",
+        "image": "https://alonguebe.com.br/assets/og-image.jpg",
+        "url": "https://alonguebe.com.br",
+        "telephone": "+5551999999999",
+        "priceRange": "$$",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Rua XV de Novembro, 123",
+          "addressLocality": "Canoas",
+          "addressRegion": "RS",
+          "postalCode": "92010-000",
+          "addressCountry": "BR"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": -29.9181,
+          "longitude": -51.1781
+        },
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": [
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday"
+            ],
+            "opens": "09:00",
+            "closes": "19:00"
+          }
+        ],
+        "sameAs": [
+          "https://www.instagram.com/alonguebe",
+          "https://wa.me/5551999999999"
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Ponto de montagem usado por ReactDOM em src/main.jsx. -->
+    <div id="root"></div>
+    <!-- type="module" habilita imports ES Modules e inicia o frontend. -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

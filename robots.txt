@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Bloquear indexação da API do backend
+Disallow: /api/
+
+Sitemap: https://alonguebe.com.br/sitemap.xml

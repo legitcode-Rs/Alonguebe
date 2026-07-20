@@ -1,0 +1,11 @@
+{
+  "name": "alonguebe",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/start.js",
+    "dev": "node scripts/start.js",
+    "start:legacy-api": "node server/server.js",
+    "share": "./.tools/cloudflared tunnel --url http://localhost:3000 --http-host-header localhost:3000 --no-autoupdate"
+  }
+}
